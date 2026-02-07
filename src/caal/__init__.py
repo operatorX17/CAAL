@@ -29,10 +29,16 @@ License: MIT
 __version__ = "0.1.0"
 __author__ = "CoreWorxLab"
 
-from .llm import CAALLLM, OllamaLLM
-
 __all__ = [
     "CAALLLM",
     "OllamaLLM",  # Backward compatibility
     "__version__",
 ]
+
+
+def __getattr__(name: str):
+    if name in {"CAALLLM", "OllamaLLM"}:
+        from .llm import CAALLLM, OllamaLLM
+
+        return {"CAALLLM": CAALLLM, "OllamaLLM": OllamaLLM}[name]
+    raise AttributeError(f"module 'caal' has no attribute '{name}'")
