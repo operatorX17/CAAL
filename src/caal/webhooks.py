@@ -48,6 +48,7 @@ from pydantic import BaseModel
 
 from . import registry_cache
 from . import settings as settings_module
+from .kernel.runtime import handle_kernel_chat_request
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +145,23 @@ class AnnounceResponse(BaseModel):
 
     status: str
     room_name: str
+
+
+class KernelChatRequest(BaseModel):
+    """Request body for /kernel/chat endpoint."""
+
+    user_id: str
+    text: str
+    session_id: str | None = None
+    metadata: dict | None = None
+
+
+class KernelChatResponse(BaseModel):
+    """Response body for /kernel/chat endpoint."""
+
+    session_id: str
+    events: list[dict]
+    response: dict
 
 
 class ReloadToolsResponse(BaseModel):
@@ -337,6 +355,20 @@ async def health() -> HealthResponse:
         status="ok",
         active_sessions=rooms,
     )
+
+
+@app.post("/kernel/chat", response_model=KernelChatResponse)
+async def kernel_chat(req: KernelChatRequest) -> KernelChatResponse:
+    """Feature-flagged Kernel chat endpoint."""
+    if os.getenv("CAAL_KERNEL_CHAT") != "1":
+        raise HTTPException(status_code=404, detail="Kernel chat disabled")
+    session_id, events, response = handle_kernel_chat_request(
+        user_id=req.user_id,
+        text=req.text,
+        session_id=req.session_id,
+        metadata=req.metadata,
+    )
+    return KernelChatResponse(session_id=session_id, events=events, response=response)
 
 
 # =============================================================================
