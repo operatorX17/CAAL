@@ -29,7 +29,10 @@ def handle_kernel_chat_request(
         trace=TraceContext(span_id=str(uuid4())),
     )
     with service.kernel.handle_stream(resolved_session_id) as stream:
-        response = service.kernel.handle(event, context={"latest_user_text": text})
+        response = service.kernel.handle(
+            event,
+            context={"latest_user_text": text, "input_metadata": metadata or {}},
+        )
         stream.close()
         events = [event.to_dict() for event in stream]
     return resolved_session_id, events, response.to_dict()

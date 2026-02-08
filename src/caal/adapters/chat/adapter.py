@@ -25,5 +25,8 @@ def handle_chat_message(
         payload={"text": text, "metadata": metadata or {}},
         trace=TraceContext(span_id=str(uuid4())),
     )
-    response = kernel.handle(event, context={"latest_user_text": text})
+    response = kernel.handle(
+        event,
+        context={"latest_user_text": text, "input_metadata": metadata or {}},
+    )
     return response.to_dict()
